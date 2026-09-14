@@ -1,0 +1,785 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FilmClip</title>
+<link rel="icon" type="image/png" href="https://em-content.zobj.net/source/apple/391/clapper-board_1f3ac.png">
+<style> panel to remove
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:system-ui,sans-serif;background:#f4f6fb;color:#111;transition:.3s}
+body.dark{background:#0f172a;color:#e5e7eb}
+
+header{
+  display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;
+  gap:10px;margin-bottom:20px;
+  background:rgba(255,255,255,0.8);backdrop-filter:blur(4px);
+  padding:10px 16px;border-radius:14px;box-shadow:0 4px 10px rgba(0,0,0,0.05);
+}
+body.dark header{background:rgba(30,41,59,0.8)}
+header h1{font-size:28px}
+
+input,select,button{
+  padding:8px 14px;border-radius:20px;border:1px solid #ccc;font-size:14px;
+  background:#f0f0f0;transition:.2s;
+}
+input:focus,select:focus{outline:none;border-color:#3b82f6}
+button{cursor:pointer;font-weight:600;transition:.2s}
+button:active{transform:scale(0.97)}
+.primary{background:#3b82f6;color:#fff;border:none}
+.secondary{background:#e5e5e5;border:none}
+.danger{background:#ef4444;color:#fff;border:none}
+
+body.dark input,body.dark select,body.dark button{background:#1e293b;color:#fff;border-color:#334155}
+
+#userLabel{margin-top:5px;font-weight:500}
+#videos{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:18px}
+
+.video-card{
+  background:#fff;padding:12px;border-radius:14px;
+  box-shadow:0 6px 20px rgba(0,0,0,0.08);
+  display:flex;flex-direction:column;transition:transform .2s;
+  position:relative;
+}
+body.dark .video-card{background:#1e293b}
+.video-card:hover{transform:translateY(-4px)}
+
+iframe{width:100%;height:180px;border-radius:10px;border:none}
+.title{font-weight:700;margin:8px 0 4px}
+.muted{color:#6b7280;font-size:13px}
+.actions-row{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;align-items:center}
+
+/* STATS ROW */
+.stats-row{display:flex;gap:12px;margin:6px 0;font-size:13px;color:#6b7280}
+.stat-item{display:flex;align-items:center;gap:3px}
+
+/* LIKE BUTTON */
+.like-btn{
+  display:flex;align-items:center;gap:4px;
+  padding:5px 12px;border-radius:20px;border:1px solid #ccc;
+  background:#f0f0f0;font-size:13px;font-weight:600;cursor:pointer;transition:.2s;
+}
+.like-btn.liked{background:#fee2e2;border-color:#f87171;color:#dc2626}
+.like-btn:hover{border-color:#f87171}
+body.dark .like-btn{background:#1e293b;border-color:#334155;color:#e5e7eb}
+body.dark .like-btn.liked{background:#450a0a;border-color:#f87171;color:#f87171}
+
+/* COMMENT BUTTON */
+.comment-btn{
+  display:flex;align-items:center;gap:4px;
+  padding:5px 12px;border-radius:20px;border:1px solid #ccc;
+  background:#f0f0f0;font-size:13px;font-weight:600;cursor:pointer;transition:.2s;
+}
+.comment-btn:hover{border-color:#3b82f6}
+body.dark .comment-btn{background:#1e293b;border-color:#334155;color:#e5e7eb}
+
+.report-link{
+  font-size:12px;color:#f43f5e;cursor:pointer;
+  text-decoration:underline;user-select:none;margin-left:auto;
+}
+
+/* MODAL OVERLAY */
+.modal-bg{
+  position:fixed;inset:0;background:rgba(0,0,0,0.6);
+  display:flex;align-items:center;justify-content:center;
+  z-index:200;padding:16px;opacity:0;pointer-events:none;transition:.2s;
+}
+.modal-bg.open{opacity:1;pointer-events:all}
+.modal-box{
+  background:#fff;border-radius:16px;width:100%;max-width:680px;
+  max-height:90vh;overflow-y:auto;position:relative;
+  box-shadow:0 20px 60px rgba(0,0,0,0.3);transform:translateY(20px);transition:.2s;
+}
+.modal-bg.open .modal-box{transform:translateY(0)}
+body.dark .modal-box{background:#1e293b;color:#e5e7eb}
+.modal-close{
+  position:absolute;top:10px;right:12px;background:none;border:none;
+  font-size:20px;cursor:pointer;color:#6b7280;padding:4px 8px;border-radius:8px;
+}
+.modal-close:hover{background:#f0f0f0}
+body.dark .modal-close:hover{background:#334155}
+.modal-body{padding:18px}
+.modal-title{font-size:18px;font-weight:700;margin-bottom:6px}
+.modal-meta{font-size:13px;color:#6b7280;margin-bottom:12px}
+.modal-video iframe{width:100%;height:300px;border:none;border-radius:12px 12px 0 0}
+.modal-actions{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}
+
+/* COMMENTS */
+.comments-section h3{font-size:15px;font-weight:700;margin-bottom:10px}
+.comment-form{display:flex;gap:8px;margin-bottom:14px}
+.comment-form input{flex:1;padding:8px 12px;border-radius:10px;border:1px solid #ccc;font-size:13px;background:#f9f9f9}
+body.dark .comment-form input{background:#0f172a;border-color:#334155;color:#e5e7eb}
+.comment-form input:focus{outline:none;border-color:#3b82f6}
+.comment-item{
+  display:flex;gap:10px;padding:10px;border-radius:10px;
+  background:#f9f9f9;margin-bottom:8px;border:1px solid #e5e7eb;
+}
+body.dark .comment-item{background:#0f172a;border-color:#334155}
+.c-avatar{
+  width:30px;height:30px;border-radius:50%;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff;
+}
+.c-body{flex:1;min-width:0}
+.c-author{font-size:12px;font-weight:700;margin-bottom:2px}
+.c-text{font-size:13px;line-height:1.5;word-break:break-word}
+.c-time{font-size:11px;color:#9ca3af;margin-top:3px}
+.c-del{font-size:11px;color:#ef4444;cursor:pointer;margin-left:8px;text-decoration:underline}
+.no-comments{font-size:13px;color:#9ca3af;padding:8px 0}
+
+/* ADMIN PANEL */
+#adminPanel{
+  display:none;background:#fff;border-radius:14px;
+  box-shadow:0 6px 20px rgba(0,0,0,0.08);margin-bottom:20px;overflow:hidden;
+}
+body.dark #adminPanel{background:#1e293b}
+#adminPanel.open{display:block}
+.admin-header{
+  background:linear-gradient(135deg,#1e293b,#0f172a);color:#fff;
+  padding:16px 20px;display:flex;align-items:center;gap:12px;
+}
+.admin-tabs{display:flex;gap:0;border-bottom:1px solid #e5e7eb;background:#f9f9f9}
+body.dark .admin-tabs{background:#0f172a;border-color:#334155}
+.admin-tab{
+  padding:10px 18px;font-size:13px;font-weight:600;cursor:pointer;
+  border-bottom:2px solid transparent;transition:.15s;
+}
+.admin-tab.active{border-bottom-color:#3b82f6;color:#3b82f6}
+.admin-tab:hover{background:rgba(0,0,0,0.04)}
+.admin-content{display:none;padding:18px}
+.admin-content.active{display:block}
+.stat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px;margin-bottom:20px}
+.stat-box{background:#f4f6fb;border-radius:10px;padding:14px;text-align:center;border:1px solid #e5e7eb}
+body.dark .stat-box{background:#0f172a;border-color:#334155}
+.stat-box .sv{font-size:26px;font-weight:800;color:#3b82f6}
+.stat-box .sl{font-size:12px;color:#6b7280;margin-top:2px}
+.admin-table{width:100%;border-collapse:collapse;font-size:13px}
+.admin-table th{text-align:left;padding:8px 10px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:#6b7280;border-bottom:1px solid #e5e7eb}
+body.dark .admin-table th{border-color:#334155}
+.admin-table td{padding:8px 10px;border-bottom:1px solid #f0f0f0}
+body.dark .admin-table td{border-color:#334155}
+.admin-table tr:last-child td{border:none}
+.badge{padding:2px 8px;border-radius:99px;font-size:11px;font-weight:600}
+.badge-ok{background:#dcfce7;color:#16a34a}
+.badge-rep{background:#fee2e2;color:#dc2626}
+.badge-admin{background:#fef3c7;color:#d97706}
+
+.toast{
+  position:fixed;bottom:20px;left:50%;transform:translateX(-50%);
+  background:#111;color:#fff;padding:10px 18px;border-radius:20px;
+  opacity:0;pointer-events:none;transition:.3s;max-width:300px;text-align:center;z-index:999;
+}
+.toast.show{opacity:1}
+
+#firstReportSlide{
+  position:fixed;bottom:50px;left:50%;transform:translateX(-50%);
+  background:#f4f4f4;color:#111;padding:16px 20px;border-radius:12px;
+  box-shadow:0 4px 12px rgba(0,0,0,0.1);max-width:400px;display:none;z-index:300;
+}
+body.dark #firstReportSlide{background:#1e293b;color:#e5e7eb}
+#firstReportSlide button{position:absolute;top:6px;right:8px;background:none;border:none;font-size:16px;cursor:pointer}
+
+.admin-badge{
+  display:inline-block;background:#facc15;color:#111;
+  font-weight:600;font-size:12px;padding:2px 6px;border-radius:8px;margin-left:6px;
+}
+
+@media(max-width:600px){
+  header{flex-direction:column;align-items:flex-start}
+  #videos{grid-template-columns:1fr}
+  input,select{width:100%}
+}
+
+/* padding on page */
+body > *:not(header):not(.modal-bg):not(.toast):not(#firstReportSlide){padding:0 16px}
+#app{padding:0 16px 40px}
+</style>
+</head>
+<body>
+
+<div id="app">
+<header>
+  <h1>🎬 FilmClip</h1>
+  <input id="search" placeholder="Search...">
+
+  <select id="catFilter">
+    <option value="">All Categories</option>
+    <option value="Gaming">Gaming</option>
+    <option value="Funny">Funny</option>
+    <option value="Challenge">Challenge</option>
+    <option value="General">General</option>
+    <option value="Music">Music</option>
+    <option value="TADC">TADC</option>
+    <option value="Testing">Testing</option>
+  </select>
+
+  <div id="headerBtns" style="display:flex;flex-wrap:wrap;gap:6px;">
+    <button onclick="toggleTheme()">🌗 Theme</button>
+    <button onclick="openAuth('register')">➕ Register</button>
+    <button onclick="openAuth('signin')">🔐 Sign In</button>
+    <button id="logoutBtn" style="display:none" onclick="doLogout()">🚪 Logout</button>
+    <button class="primary" onclick="openUpload()">⬆ Upload</button>
+    <button class="secondary" onclick="resetDefaults()">♻ Reset</button>
+    <button id="adminBtn" style="display:none" class="primary" onclick="toggleAdmin()">⚙ Admin</button>
+  </div>
+</header>
+
+<div class="muted" id="userLabel"></div>
+<br>
+
+<!-- ADMIN PANEL -->
+<div id="adminPanel">
+  <div class="admin-header">
+    <span style="font-size:28px">⚙️</span>
+    <div>
+      <div style="font-size:17px;font-weight:700">Admin Panel</div>
+      <div style="font-size:12px;opacity:.7">FilmClip — Full Control</div>
+    </div>
+    <button onclick="toggleAdmin()" style="margin-left:auto;background:rgba(255,255,255,0.1);border:none;color:#fff;padding:6px 12px;border-radius:10px;cursor:pointer">✕ Close</button>
+  </div>
+  <div class="admin-tabs">
+    <div class="admin-tab active" onclick="switchAdminTab('overview')">📊 Overview</div>
+    <div class="admin-tab" onclick="switchAdminTab('videos')">🎬 Videos</div>
+    <div class="admin-tab" onclick="switchAdminTab('users')">👥 Users</div>
+    <div class="admin-tab" onclick="switchAdminTab('reports')">🚩 Reports</div>
+    <div class="admin-tab" onclick="switchAdminTab('comments')">💬 Comments</div>
+  </div>
+  <div class="admin-content active" id="atab-overview">
+    <div class="stat-grid" id="adminStats"></div>
+    <div style="font-weight:700;margin-bottom:10px">🔥 Top Videos by Views</div>
+    <div id="adminTopVideos"></div>
+  </div>
+  <div class="admin-content" id="atab-videos">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+      <b>All Videos</b>
+      <button class="danger" onclick="adminClearUserVids()">🗑 Clear User Videos</button>
+    </div>
+    <div id="adminVideosTable"></div>
+  </div>
+  <div class="admin-content" id="atab-users">
+    <b style="display:block;margin-bottom:12px">Registered Users</b>
+    <div id="adminUsersTable"></div>
+  </div>
+  <div class="admin-content" id="atab-reports">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+      <b>Reported Videos</b>
+      <button class="secondary" onclick="adminClearReports()">Clear All</button>
+    </div>
+    <div id="adminReportsTable"></div>
+  </div>
+  <div class="admin-content" id="atab-comments">
+    <b style="display:block;margin-bottom:12px">All Comments</b>
+    <div id="adminCommentsTable"></div>
+  </div>
+</div>
+
+<main id="videos"></main>
+</div>
+
+<!-- VIDEO MODAL -->
+<div class="modal-bg" id="videoModal" onclick="maybeCloseModal(event,'videoModal')">
+  <div class="modal-box">
+    <button class="modal-close" onclick="closeVideoModal()">✕</button>
+    <div class="modal-video" id="modalVideo"></div>
+    <div class="modal-body">
+      <div class="modal-title" id="modalTitle"></div>
+      <div class="modal-meta" id="modalMeta"></div>
+      <div class="modal-actions" id="modalActions"></div>
+      <div class="comments-section">
+        <h3>💬 Comments</h3>
+        <div class="comment-form" id="commentForm">
+          <input id="commentInput" placeholder="Add a comment..." maxlength="200">
+          <button class="primary" onclick="submitComment()">Post</button>
+        </div>
+        <div id="guestNote" style="display:none;font-size:12px;color:#9ca3af;margin-bottom:10px">Sign in to leave a comment.</div>
+        <div id="commentsList"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- UPLOAD MODAL -->
+<div class="modal-bg" id="uploadModal" onclick="maybeCloseModal(event,'uploadModal')">
+  <div class="modal-box" style="max-width:460px">
+    <button class="modal-close" onclick="closeModal('uploadModal')">✕</button>
+    <div class="modal-body">
+      <div class="modal-title" style="margin-bottom:16px">⬆ Upload Video</div>
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <div><label style="font-size:13px;font-weight:600;display:block;margin-bottom:4px">Title</label>
+          <input id="upTitle" placeholder="Video title" style="width:100%"></div>
+        <div><label style="font-size:13px;font-weight:600;display:block;margin-bottom:4px">YouTube Embed URL</label>
+          <input id="upEmbed" placeholder="https://www.youtube.com/embed/..." style="width:100%"></div>
+        <div><label style="font-size:13px;font-weight:600;display:block;margin-bottom:4px">Category</label>
+          <select id="upCat" style="width:100%">
+            <option value="">Select category</option>
+            <option>Gaming</option><option>Funny</option><option>Challenge</option>
+            <option>General</option><option>Music</option><option>TADC</option><option>Testing</option>
+          </select></div>
+        <button class="primary" style="width:100%;padding:10px" onclick="submitUpload()">Upload 🎬</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- AUTH MODAL -->
+<div class="modal-bg" id="authModal" onclick="maybeCloseModal(event,'authModal')">
+  <div class="modal-box" style="max-width:380px">
+    <button class="modal-close" onclick="closeModal('authModal')">✕</button>
+    <div class="modal-body">
+      <div class="modal-title" style="margin-bottom:16px" id="authTitle">🔐 Sign In</div>
+      <div style="display:flex;gap:8px;margin-bottom:16px">
+        <button id="tabSignin" class="primary" style="flex:1" onclick="switchAuthTab2('signin')">Sign In</button>
+        <button id="tabRegister" class="secondary" style="flex:1" onclick="switchAuthTab2('register')">Register</button>
+      </div>
+      <div id="authFormSignin" style="display:flex;flex-direction:column;gap:10px">
+        <input id="siUser" placeholder="Username" style="width:100%">
+        <input id="siPass" type="password" placeholder="Password" style="width:100%">
+        <button class="primary" style="width:100%;padding:10px" onclick="doSignin()">Sign In 🔐</button>
+      </div>
+      <div id="authFormRegister" style="display:none;flex-direction:column;gap:10px">
+        <input id="regUser" placeholder="Choose a username" style="width:100%">
+        <input id="regPass" type="password" placeholder="Password (min 3 chars)" style="width:100%">
+        <button class="primary" style="width:100%;padding:10px;background:#22c55e" onclick="doRegister()">Create Account ➕</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+<div id="firstReportSlide">
+  Thanks for informing us!<br>
+  Reporting bad videos helps keep FilmClip friendly! :D
+  <button onclick="document.getElementById('firstReportSlide').style.display='none'">✕</button>
+</div>
+
+<script>
+const $=id=>document.getElementById(id)
+const get=k=>{try{return JSON.parse(localStorage.getItem(k))}catch{return null}}
+const set=(k,v)=>localStorage.setItem(k,JSON.stringify(v))
+
+const ADMIN_USER='FilmClip (official)'
+const ADMIN_PASS='FilmClipBoard'
+const AV_COLORS=['#3b82f6','#e85d26','#22c55e','#9333ea','#ec4899','#f59e0b','#06b6d4','#f43f5e']
+
+// ── STATE ──
+let users     = get('fc_users')    || {}
+let userVids  = get('fc_uv')       || []
+let views     = get('fc_views')    || {}
+let likes     = get('fc_likes')    || {}
+let myLikes   = get('fc_ml')       || {}
+let comments  = get('fc_cmts')     || {}
+let reported  = get('fc_rep')      || []
+let currentVid= null
+
+users[ADMIN_USER] = users[ADMIN_USER] || {password:ADMIN_PASS,admin:true,system:true}
+saveAll()
+
+function saveAll(){
+  set('fc_users',users);set('fc_uv',userVids)
+  set('fc_views',views);set('fc_likes',likes)
+  set('fc_ml',myLikes);set('fc_cmts',comments)
+  set('fc_rep',reported)
+}
+
+function me(){return localStorage.getItem('fc_me')||null}
+function isAdmin(){return me()===ADMIN_USER}
+function isGuest(){return !me()}
+
+// ── CORE VIDEOS ──
+const coreVideos=[
+  {id:"survival",title:"I Survived 100 Days Of Hardcore Minecraft!",channel:"MrBeast Gaming",embed:"https://www.youtube.com/embed/jk6thMe6Vq8",cat:"Gaming"},
+  {id:"reaction",title:"Reacting To The Worlds Most Satisfying Videos!",channel:"MrBeast",embed:"https://www.youtube.com/embed/T1QUEKLNPtA",cat:"Funny"},
+  {id:"frame",title:"Playing the hardest frame Perfect Challenges",channel:"Itz Bran",embed:"https://www.youtube.com/embed/u7Tuhg6NKTE",cat:"Challenge"},
+  {id:"puzzle",title:"Puzzles That Look Easy, But Are Actually IMPOSSIBLE!",channel:"Make Waves",embed:"https://www.youtube.com/embed/PQrjh1BN1f4",cat:"General"},
+  {id:"dream",title:"Every Characters BIGGEST FEAR Explained - The Amazing Digital Circus (Episode 8)",channel:"Internet Inferno",embed:"https://www.youtube.com/embed/p80sE_JGZiA",cat:"TADC"},
+  {id:"dream",title:"I Built My Ultimate DREAM Gaming Room ($30,000)",channel:"GutzyAiden",embed:"https://www.youtube.com/embed/j6PJOtcE3UQ",cat:"Gaming"},
+  {id:"weird",title:"I met 9 People Who Shouldn't Exist!",channel:"Stokes Twins",embed:"https://www.youtube.com/embed/Oiouepix6OQ",cat:"Funny"},
+  {id:"tadc",title:"All episodes of the Amazing Digital Circus",channel:"Lazzy Playtime",embed:"https://www.youtube.com/embed/v5jho4zFk2k?start=9198",cat:"TADC"},
+  {id:"duck",title:"The Duck Song",channel:"forrestfire101",embed:"https://www.youtube.com/embed/MtN1YnoL46Q",cat:"Music"},
+  {id:"money",title:"I Gave People $1,000,000 But ONLY 1 Minute To Spend It!",channel:"MrBeast",embed:"https://www.youtube.com/embed/LeYsRMZFUq0",cat:"Challenge"},
+  {id:"cheating",title:"I tested every banned School Gaget",channel:"Hafu Go",embed:"https://www.youtube.com/embed/NTFcXY3SJYg",cat:"Testing"},
+  {id:"water",title:"Most DANGEROUS Waterslides EVER Created!",channel:"top 5 best",embed:"https://www.youtube.com/embed/ym0yjvy0q0Y",cat:"General"},
+  {id:"---",title:"NOT HERE YET",channel:"ADMIN",embed:"https://www.youtube.com/embed/Ah3QYHfBfHY",cat:"---"},
+  {id:"--l-",title:"NOT HERE YET",channel:"ADMIN",embed:"https://www.youtube.com/embed/7yE5I0I5r6Y",cat:"---"}
+]
+
+function allVids(){return [...coreVideos,...userVids]}
+function isCoreVid(id){return !!coreVideos.find(v=>v.id===id)}
+function avatarColor(name){return AV_COLORS[Math.abs([...name].reduce((a,c)=>a+c.charCodeAt(0),0))%AV_COLORS.length]}
+function fmtN(n){return n>=1e6?(n/1e6).toFixed(1)+'M':n>=1000?(n/1000).toFixed(1)+'K':n}
+function timeAgo(ts){
+  const s=(Date.now()-ts)/1000
+  if(s<60)return 'just now'
+  if(s<3600)return Math.floor(s/60)+'m ago'
+  if(s<86400)return Math.floor(s/3600)+'h ago'
+  return Math.floor(s/86400)+'d ago'
+}
+function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+
+// ── THEME ──
+let dark=localStorage.getItem('fc_theme')!=='light'
+if(!dark)document.body.classList.add('dark')// placeholder — apply correctly:
+;(()=>{dark=localStorage.getItem('fc_theme')==='dark';if(dark)document.body.classList.add('dark')})()
+function toggleTheme(){
+  dark=!dark
+  document.body.classList.toggle('dark',dark)
+  localStorage.setItem('fc_theme',dark?'dark':'light')
+}
+
+// ── USER UI ──
+function updateUserUI(){
+  const u=me()
+  if(u){
+    const col=avatarColor(u)
+    $('userLabel').innerHTML=`👋 <span style="font-weight:700">${u}</span>`+(isAdmin()?` <span class="admin-badge">ADMIN</span>`:'')
+    $('logoutBtn').style.display=''
+    $('adminBtn').style.display=isAdmin()?'':' none'
+    // hide sign in / register buttons
+    document.querySelectorAll('#headerBtns button').forEach(b=>{
+      if(b.textContent.includes('Register')||b.textContent.includes('Sign In')) b.style.display='none'
+    })
+  } else {
+    $('userLabel').innerHTML='👋 Guest'
+    $('logoutBtn').style.display='none'
+    $('adminBtn').style.display='none'
+    document.querySelectorAll('#headerBtns button').forEach(b=>{
+      if(b.textContent.includes('Register')||b.textContent.includes('Sign In')) b.style.display=''
+    })
+  }
+}
+updateUserUI()
+
+// ── TOAST ──
+let toastT
+function toast(msg){
+  const t=$('toast');t.textContent=msg;t.classList.add('show')
+  clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove('show'),2400)
+}
+
+// ── AUTH ──
+function openAuth(tab){
+  $('authModal').classList.add('open')
+  switchAuthTab2(tab||'signin')
+}
+function switchAuthTab2(t){
+  $('authTitle').textContent=t==='signin'?'🔐 Sign In':'➕ Register'
+  $('authFormSignin').style.display=t==='signin'?'flex':'none'
+  $('authFormRegister').style.display=t==='register'?'flex':'none'
+  $('tabSignin').className=t==='signin'?'primary':'secondary'
+  $('tabRegister').className=t==='register'?'primary':'secondary'
+}
+function doSignin(){
+  const u=$('siUser').value.trim(),p=$('siPass').value
+  if(!users[u])return toast('User not found')
+  if(users[u].password!==p)return toast('Wrong password')
+  localStorage.setItem('fc_me',u)
+  updateUserUI();render();closeModal('authModal');toast('Welcome back, '+u+'! 👋')
+}
+function doRegister(){
+  const u=$('regUser').value.trim(),p=$('regPass').value
+  if(!u||u.length<2)return toast('Username too short')
+  if(users[u])return toast('Username already taken')
+  if(!p||p.length<3)return toast('Password too short (min 3 chars)')
+  users[u]={password:p,admin:false,joined:Date.now()}
+  saveAll();localStorage.setItem('fc_me',u)
+  updateUserUI();render();closeModal('authModal');toast('Account created! 🎉')
+}
+function doLogout(){
+  localStorage.removeItem('fc_me')
+  updateUserUI();render()
+  if($('adminPanel').classList.contains('open'))$('adminPanel').classList.remove('open')
+  toast('Logged out')
+}
+
+// ── MODALS ──
+function maybeCloseModal(e,id){if(e.target.id===id)closeModal(id)}
+function closeModal(id){$(id).classList.remove('open')}
+
+// ── RENDER ──
+function render(){
+  const q=$('search').value.toLowerCase()
+  const cat=$('catFilter').value
+  let all=allVids()
+  if(q)all=all.filter(v=>(v.title+v.channel).toLowerCase().includes(q))
+  if(cat)all=all.filter(v=>v.cat===cat)
+
+  $('videos').innerHTML=''
+  all.forEach(v=>{
+    const vws=views[v.id]||0
+    const lk=likes[v.id]||0
+    const myLiked=myLikes[v.id]&&myLikes[v.id].includes(me()||'__guest__')
+    const cmtCount=(comments[v.id]||[]).length
+    const isRep=reported.includes(v.id)
+    const canDel=isAdmin()||(me()&&me()===v.channel&&!isCoreVid(v.id))
+
+    const card=document.createElement('div')
+    card.className='video-card'
+    card.innerHTML=`
+      <iframe src="${v.embed}" allowfullscreen loading="lazy"></iframe>
+      <div class="title">${v.title}</div>
+      <div class="muted">by ${v.channel} · 🏷 ${v.cat}${isRep?' · <span style="color:#f43f5e">🚩 Reported</span>':''}</div>
+      <div class="stats-row">
+        <span class="stat-item">👀 ${fmtN(vws)}</span>
+        <span class="stat-item">❤️ ${fmtN(lk)}</span>
+        <span class="stat-item">💬 ${fmtN(cmtCount)}</span>
+      </div>
+      <div class="actions-row">
+        <button class="like-btn ${myLiked?'liked':''}" onclick="toggleLike('${v.id}',this)">
+          ❤️ ${myLiked?'Liked':'Like'} <span class="lc">${fmtN(lk)}</span>
+        </button>
+        <button class="comment-btn" onclick="openVideo('${v.id}')">💬 ${fmtN(cmtCount)}</button>
+        ${canDel?`<button class="danger" style="padding:5px 10px;font-size:12px" onclick="deleteVideo('${v.id}')">🗑</button>`:''}
+        <span class="report-link" onclick="reportVideo('${v.id}')">Report</span>
+      </div>`
+    $('videos').appendChild(card)
+  })
+
+  if(!all.length){
+    $('videos').innerHTML=`<div style="grid-column:1/-1;text-align:center;padding:50px;color:#9ca3af"><div style="font-size:40px;margin-bottom:8px">🎬</div>No videos found</div>`
+  }
+}
+
+// ── OPEN VIDEO ──
+function openVideo(id){
+  const v=allVids().find(x=>x.id===id)
+  if(!v)return
+  currentVid=id
+  views[id]=(views[id]||0)+1
+  saveAll()
+
+  const lk=likes[id]||0
+  const myLiked=myLikes[id]&&myLikes[id].includes(me()||'__guest__')
+  const canDel=isAdmin()||(me()&&me()===v.channel&&!isCoreVid(id))
+
+  $('modalVideo').innerHTML=`<iframe src="${v.embed}?autoplay=1" allowfullscreen allow="autoplay"></iframe>`
+  $('modalTitle').textContent=v.title
+  $('modalMeta').innerHTML=`📺 ${v.channel} &nbsp;·&nbsp; 🏷 ${v.cat} &nbsp;·&nbsp; 👀 ${fmtN(views[id])} views`
+  $('modalActions').innerHTML=`
+    <button class="like-btn ${myLiked?'liked':''}" id="mlbtn" onclick="toggleLike('${id}',this,true)">
+      ❤️ ${myLiked?'Liked':'Like'} <span class="lc">${fmtN(lk)}</span>
+    </button>
+    <button class="secondary" onclick="reportVideo('${id}')">🚩 Report</button>
+    ${canDel?`<button class="danger" onclick="deleteVideo('${id}');closeVideoModal()">🗑 Delete</button>`:''}
+  `
+
+  if(me()){
+    $('commentForm').style.display='flex'
+    $('guestNote').style.display='none'
+  } else {
+    $('commentForm').style.display='none'
+    $('guestNote').style.display=''
+  }
+  renderComments(id)
+  $('videoModal').classList.add('open')
+}
+
+function closeVideoModal(){
+  $('videoModal').classList.remove('open')
+  $('modalVideo').innerHTML=''
+  currentVid=null
+  render()
+}
+
+// ── LIKES ──
+function toggleLike(id,btn,inModal=false){
+  if(isGuest())return toast('Sign in to like videos')
+  const u=me()
+  if(!myLikes[id])myLikes[id]=[]
+  const liked=myLikes[id].includes(u)
+  if(liked){
+    myLikes[id]=myLikes[id].filter(x=>x!==u)
+    likes[id]=Math.max(0,(likes[id]||0)-1)
+  } else {
+    myLikes[id].push(u)
+    likes[id]=(likes[id]||0)+1
+  }
+  saveAll()
+  const nowLiked=!liked
+  btn.className='like-btn'+(nowLiked?' liked':'')
+  btn.innerHTML=`❤️ ${nowLiked?'Liked':'Like'} <span class="lc">${fmtN(likes[id])}</span>`
+  if(!inModal)render()
+}
+
+// ── COMMENTS ──
+function renderComments(id){
+  const cmts=comments[id]||[]
+  if(!cmts.length){$('commentsList').innerHTML=`<div class="no-comments">No comments yet. Be the first! 💬</div>`;return}
+  $('commentsList').innerHTML=cmts.slice().reverse().map((c,ri)=>{
+    const realIdx=cmts.length-1-ri
+    const col=avatarColor(c.author)
+    const canDel=me()===c.author||isAdmin()
+    return `<div class="comment-item">
+      <div class="c-avatar" style="background:${col}">${c.author[0].toUpperCase()}</div>
+      <div class="c-body">
+        <div class="c-author">${esc(c.author)}${users[c.author]?.admin?' <span class="admin-badge">ADMIN</span>':''}</div>
+        <div class="c-text">${esc(c.text)}</div>
+        <div class="c-time">${timeAgo(c.ts)}${canDel?`<span class="c-del" onclick="delComment('${id}',${realIdx})">Delete</span>`:''}</div>
+      </div>
+    </div>`
+  }).join('')
+}
+
+function submitComment(){
+  if(!currentVid||isGuest())return
+  const txt=$('commentInput').value.trim()
+  if(!txt)return toast('Type something first!')
+  if(!comments[currentVid])comments[currentVid]=[]
+  comments[currentVid].push({author:me(),text:txt,ts:Date.now()})
+  saveAll();$('commentInput').value='';renderComments(currentVid);toast('Comment posted! 💬')
+}
+
+function delComment(vid,idx){
+  if(!comments[vid])return
+  comments[vid].splice(idx,1)
+  saveAll();renderComments(vid);toast('Comment deleted')
+}
+
+// ── UPLOAD ──
+function openUpload(){
+  if(isGuest())return toast('Sign in to upload')
+  $('uploadModal').classList.add('open')
+}
+function submitUpload(){
+  const title=$('upTitle').value.trim()
+  const embed=$('upEmbed').value.trim()
+  const cat=$('upCat').value
+  if(!title)return toast('Enter a title')
+  if(!embed||!embed.includes('embed'))return toast('Invalid embed URL')
+  if(!cat)return toast('Select a category')
+  userVids.push({id:'u'+Date.now(),title,channel:me(),embed,cat,uploaded:Date.now()})
+  saveAll();render();closeModal('uploadModal')
+  $('upTitle').value='';$('upEmbed').value='';$('upCat').value=''
+  toast('Video uploaded! 🎬')
+}
+
+// ── REPORT / DELETE ──
+function reportVideo(id){
+  if(!reported.includes(id))reported.push(id)
+  saveAll();render();$('firstReportSlide').style.display='block';toast('Video reported. Thank you!')
+}
+function deleteVideo(id){
+  userVids=userVids.filter(v=>v.id!==id)
+  reported=reported.filter(r=>r!==id)
+  delete comments[id];delete views[id];delete likes[id];delete myLikes[id]
+  saveAll();render();toast('Video deleted 🗑')
+}
+function resetDefaults(){
+  localStorage.removeItem('fc_uv');userVids=[]
+  saveAll();render();toast('Reset to default videos')
+}
+
+// ── ADMIN ──
+function toggleAdmin(){
+  if(!isAdmin())return
+  $('adminPanel').classList.toggle('open')
+  if($('adminPanel').classList.contains('open'))refreshAdmin()
+}
+function switchAdminTab(tab){
+  document.querySelectorAll('.admin-tab').forEach((t,i)=>{
+    const ts=['overview','videos','users','reports','comments']
+    t.classList.toggle('active',ts[i]===tab)
+  })
+  document.querySelectorAll('.admin-content').forEach(c=>c.classList.remove('active'))
+  $('atab-'+tab).classList.add('active')
+  refreshAdmin()
+}
+function refreshAdmin(){
+  const all=allVids()
+  const totalV=Object.values(views).reduce((a,b)=>a+b,0)
+  const totalL=Object.values(likes).reduce((a,b)=>a+b,0)
+  const totalC=Object.values(comments).reduce((a,c)=>a+(c.length||0),0)
+
+  // stats
+  $('adminStats').innerHTML=[
+    {v:all.length,l:'Videos',i:'🎬'},
+    {v:Object.keys(users).length,l:'Users',i:'👥'},
+    {v:fmtN(totalV),l:'Total Views',i:'👀'},
+    {v:fmtN(totalL),l:'Total Likes',i:'❤️'},
+    {v:totalC,l:'Comments',i:'💬'},
+    {v:reported.length,l:'Reports',i:'🚩'},
+  ].map(s=>`<div class="stat-box"><div style="font-size:20px">${s.i}</div><div class="sv">${s.v}</div><div class="sl">${s.l}</div></div>`).join('')
+
+  // top videos
+  const top=[...all].sort((a,b)=>(views[b.id]||0)-(views[a.id]||0)).slice(0,5)
+  $('adminTopVideos').innerHTML=`<table class="admin-table">
+    <tr><th>#</th><th>Title</th><th>Channel</th><th>Views</th><th>Likes</th></tr>
+    ${top.map((v,i)=>`<tr><td>${i+1}</td><td><b>${v.title}</b></td><td>${v.channel}</td><td>👀 ${fmtN(views[v.id]||0)}</td><td>❤️ ${fmtN(likes[v.id]||0)}</td></tr>`).join('')}
+  </table>`
+
+  // videos
+  $('adminVideosTable').innerHTML=`<table class="admin-table">
+    <tr><th>Title</th><th>By</th><th>Cat</th><th>Views</th><th>Likes</th><th>Status</th><th></th></tr>
+    ${all.map(v=>`<tr>
+      <td><b>${v.title}</b></td><td>${v.channel}</td>
+      <td>${v.cat}</td><td>${fmtN(views[v.id]||0)}</td><td>${fmtN(likes[v.id]||0)}</td>
+      <td><span class="badge ${reported.includes(v.id)?'badge-rep':'badge-ok'}">${reported.includes(v.id)?'Reported':'OK'}</span></td>
+      <td>${!isCoreVid(v.id)?`<button class="danger" style="padding:4px 8px;font-size:12px" onclick="deleteVideo('${v.id}');refreshAdmin()">🗑</button>`:'—'}</td>
+    </tr>`).join('')}
+  </table>`
+
+  // users
+  $('adminUsersTable').innerHTML=`<table class="admin-table">
+    <tr><th>Username</th><th>Role</th><th>Uploads</th><th></th></tr>
+    ${Object.entries(users).map(([n,u])=>`<tr>
+      <td><b>${n}</b></td>
+      <td>${u.admin?'<span class="badge badge-admin">ADMIN</span>':'User'}</td>
+      <td>${userVids.filter(v=>v.channel===n).length}</td>
+      <td>${n!==ADMIN_USER&&n!==me()?`<button class="danger" style="padding:4px 8px;font-size:12px" onclick="adminDelUser('${n}')">🗑</button>`:'—'}</td>
+    </tr>`).join('')}
+  </table>`
+
+  // reports
+  const repVids=all.filter(v=>reported.includes(v.id))
+  $('adminReportsTable').innerHTML=repVids.length?`<table class="admin-table">
+    <tr><th>Title</th><th>By</th><th>Actions</th></tr>
+    ${repVids.map(v=>`<tr>
+      <td><b>${v.title}</b></td><td>${v.channel}</td>
+      <td style="display:flex;gap:6px;flex-wrap:wrap">
+        <button class="secondary" style="padding:4px 8px;font-size:12px" onclick="adminDismiss('${v.id}')">✓ Dismiss</button>
+        ${!isCoreVid(v.id)?`<button class="danger" style="padding:4px 8px;font-size:12px" onclick="deleteVideo('${v.id}');refreshAdmin()">🗑 Delete</button>`:''}
+      </td>
+    </tr>`).join('')}
+  </table>`:'<div style="color:#9ca3af;font-size:13px">No reported videos 🎉</div>'
+
+  // comments
+  const allC=[]
+  Object.entries(comments).forEach(([vid,cs])=>{
+    const vt=allVids().find(x=>x.id===vid)?.title||vid
+    cs.forEach((c,i)=>allC.push({...c,vid,vt,ri:i}))
+  })
+  allC.sort((a,b)=>b.ts-a.ts)
+  $('adminCommentsTable').innerHTML=allC.length?`<table class="admin-table">
+    <tr><th>Author</th><th>Comment</th><th>Video</th><th>Time</th><th></th></tr>
+    ${allC.slice(0,60).map(c=>`<tr>
+      <td><b>${c.author}</b></td>
+      <td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(c.text)}</td>
+      <td style="font-size:12px;color:#9ca3af">${c.vt.slice(0,22)}</td>
+      <td style="font-size:11px;color:#9ca3af">${timeAgo(c.ts)}</td>
+      <td><button class="danger" style="padding:4px 8px;font-size:12px" onclick="delComment('${c.vid}',${c.ri});refreshAdmin()">🗑</button></td>
+    </tr>`).join('')}
+  </table>`:'<div style="color:#9ca3af;font-size:13px">No comments yet.</div>'
+}
+
+function adminDelUser(n){
+  if(!confirm('Delete user "'+n+'"?'))return
+  delete users[n];userVids=userVids.filter(v=>v.channel!==n)
+  saveAll();render();refreshAdmin();toast('User deleted')
+}
+function adminClearUserVids(){
+  if(!confirm('Delete ALL user-uploaded videos?'))return
+  userVids=[];saveAll();render();refreshAdmin();toast('User videos cleared')
+}
+function adminClearReports(){reported=[];saveAll();render();refreshAdmin();toast('Reports cleared')}
+function adminDismiss(id){reported=reported.filter(r=>r!==id);saveAll();render();refreshAdmin();toast('Report dismissed')}
+
+// ── EVENTS ──
+$('search').addEventListener('input',render)
+$('catFilter').addEventListener('change',render)
+document.addEventListener('keydown',e=>{
+  if(e.key==='Enter'&&$('videoModal').classList.contains('open')&&me())submitComment()
+})
+
+render()
+</script>
+</body>
+</html>
+In the video names on the homepage there will be no "" or ' or , ETC since it can confuse the code. 🎦
